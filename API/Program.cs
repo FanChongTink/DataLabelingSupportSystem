@@ -1,7 +1,16 @@
+﻿using DAL;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ... Các service khác
 
+// Lấy chuỗi kết nối từ appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Đăng ký DbContext sử dụng SQL Server (LocalDB vẫn dùng provider này)
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
