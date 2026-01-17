@@ -69,8 +69,11 @@ namespace DAL
                 .HasOne(u => u.PaymentInfo)
                 .WithOne(p => p.User)
                 .HasForeignKey<PaymentInfo>(p => p.UserId);
-
-            // Đảm bảo UnitPriceSnapshot lưu chính xác tiền tệ
+            modelBuilder.Entity<Annotation>()
+                 .HasOne(a => a.LabelClass)
+                 .WithMany()  
+                 .HasForeignKey(a => a.LabelClassId)
+                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<Invoice>()
                 .Property(i => i.UnitPriceSnapshot)
                 .HasPrecision(18, 2);
