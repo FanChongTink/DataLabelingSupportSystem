@@ -9,16 +9,14 @@ namespace DTOs.Entities
         public int Id { get; set; }
 
         public int AssignmentId { get; set; }
-
         [ForeignKey("AssignmentId")]
         public virtual Assignment Assignment { get; set; } = null!;
 
-        public int LabelClassId { get; set; }
-
-        [ForeignKey("LabelClassId")]
+        public int ClassId { get; set; }
+        [ForeignKey("ClassId")]
         public virtual LabelClass LabelClass { get; set; } = null!;
 
         [Required]
-        public string DataJson { get; set; } = "{}";
+        public string Value { get; set; } = "{}";
     }
 }

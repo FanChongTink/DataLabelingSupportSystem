@@ -1,6 +1,9 @@
 ﻿using DAL.Interfaces;
 using DTOs.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace DAL.Repositories
 {
@@ -12,20 +15,19 @@ namespace DAL.Repositories
 
         public async Task<Project?> GetProjectWithDetailsAsync(int id)
         {
-            return await _dbSet
-                .Include(p => p.LabelClasses)
-                .Include(p => p.DataItems)
-                .Include(p => p.Manager)
+            return await _context.Projects
+                .Include(p => p.Manager)        
+                .Include(p => p.LabelClasses)   
+                .Include(p => p.DataItems)     
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<List<Project>> GetProjectsByManagerIdAsync(string managerId)
         {
-            return await _dbSet
+            return await _context.Projects
                 .Include(p => p.DataItems)
-                .Include(p => p.Manager)
-                .Where(p => p.ManagerId == managerId)
                 .OrderByDescending(p => p.Id)
+                .Where(p => p.ManagerId == managerId)
                 .ToListAsync();
         }
     }

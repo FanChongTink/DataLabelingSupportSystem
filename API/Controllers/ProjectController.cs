@@ -39,6 +39,52 @@ namespace API.Controllers
             }
         }
 
+        [HttpPost("{id}/upload-direct")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadDataDirect(int id, [FromForm] UploadDataRequest request)
+        {
+            var urls = new List<string>();
+
+            try
+            {
+                var folderName = Path.Combine("wwwroot", "uploads", $"project-{id}");
+                var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+
+                if (!Directory.Exists(pathToSave))
+                {
+                    Directory.CreateDirectory(pathToSave);
+                }
+
+                foreach (var file in request.Files)
+                {
+                    if (file.Length > 0)
+                    {
+
+                        var fileName = $"{DateTime.Now.Ticks}_{file.FileName}";
+                        var fullPath = Path.Combine(pathToSave, fileName);
+
+                        using (var stream = new FileStream(fullPath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+                        var dbUrl = $"/uploads/project-{id}/{fileName}";
+                        urls.Add(dbUrl);
+                    }
+                }
+
+                if (urls.Any())
+                {
+                    await _projectService.ImportDataItemsAsync(id, urls);
+                }
+
+                return Ok(new { Message = $"{urls.Count} files uploaded successfully", Urls = urls });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProject(int id)
         {

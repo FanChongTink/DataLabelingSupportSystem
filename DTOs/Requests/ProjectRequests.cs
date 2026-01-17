@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Http; // <-- Import thư viện này (hết báo lỗi)
+using System.ComponentModel.DataAnnotations;
 
 namespace DTOs.Requests
 {
     public class CreateProjectRequest
     {
-
         [Required]
         public string Name { get; set; } = string.Empty;
 
@@ -29,5 +29,10 @@ namespace DTOs.Requests
     {
         [Required]
         public List<string> StorageUrls { get; set; } = new List<string>();
+    }
+    public class UploadDataRequest
+    {
+        [Required]
+        public List<IFormFile> Files { get; set; } = new List<IFormFile>();
     }
 }

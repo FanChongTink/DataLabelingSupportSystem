@@ -33,18 +33,18 @@ namespace DAL.Migrations
                     b.Property<int>("AssignmentId")
                         .HasColumnType("int");
 
-                    b.Property<string>("DataJson")
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Value")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("LabelClassId")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AssignmentId");
 
-                    b.HasIndex("LabelClassId");
+                    b.HasIndex("ClassId");
 
                     b.ToTable("Annotations");
                 });
@@ -61,13 +61,16 @@ namespace DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime>("AssignedAt")
+                    b.Property<DateTime>("AssignedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("DataItemId")
                         .HasColumnType("int");
 
                     b.Property<int>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
@@ -82,6 +85,8 @@ namespace DAL.Migrations
                     b.HasIndex("AnnotatorId");
 
                     b.HasIndex("DataItemId");
+
+                    b.HasIndex("ProjectId");
 
                     b.ToTable("Assignments");
                 });
@@ -244,9 +249,11 @@ namespace DAL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("PricePerLabel")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalBudget")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -270,12 +277,15 @@ namespace DAL.Migrations
                     b.Property<string>("Comment")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Decision")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("ReviewedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("ErrorCategory")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ReviewerId")
                         .IsRequired()
@@ -369,7 +379,7 @@ namespace DAL.Migrations
 
                     b.HasOne("DTOs.Entities.LabelClass", "LabelClass")
                         .WithMany()
-                        .HasForeignKey("LabelClassId")
+                        .HasForeignKey("ClassId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -392,9 +402,17 @@ namespace DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DTOs.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.Navigation("Annotator");
 
                     b.Navigation("DataItem");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("DTOs.Entities.DataItem", b =>

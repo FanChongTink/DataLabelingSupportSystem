@@ -4,10 +4,11 @@ using BLL.Services;
 using DAL;
 using DAL.Interfaces;
 using DAL.Repositories;
+using DTOs.Entities; // <-- Thêm cái này để dùng ReviewLog, Annotation...
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models; // <-- QUAN TRỌNG: Thêm thư viện này
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,18 +47,33 @@ builder.Services.AddAuthentication(options =>
 });
 
 // ==================================================================
-// 3. DEPENDENCY INJECTION (DI)
+// 3. DEPENDENCY INJECTION (DI) - ĐĂNG KÝ SERVICE & REPO
 // ==================================================================
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// A. Repositories
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>)); // Generic
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
-
 builder.Services.AddScoped<ILabelRepository, LabelRepository>();
+
+// --- CÁC REPO MỚI (Bắt buộc phải có) ---
+builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+builder.Services.AddScoped<IRepository<Annotation>, Repository<Annotation>>(); // Dùng Generic cho Annotation
+builder.Services.AddScoped<IRepository<DataItem>, Repository<DataItem>>();     // Dùng Generic cho DataItem
+builder.Services.AddScoped<IRepository<ReviewLog>, Repository<ReviewLog>>();   // Dùng Generic cho ReviewLog
+
+// B. Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ILabelService, LabelService>();
+
+// --- CÁC SERVICE MỚI (Bắt buộc phải có) ---
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+
 
 // ==================================================================
-// 4. CONTROLLERS & SWAGGER CONFIGURATION (Đã sửa)
+// 4. CONTROLLERS & SWAGGER CONFIGURATION
 // ==================================================================
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -67,12 +83,10 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 
-// --- CẤU HÌNH SWAGGER ĐỂ HIỆN NÚT AUTHORIZE ---
 builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1", new OpenApiInfo { Title = "Data Labeling API", Version = "v1" });
 
-    // Định nghĩa Security Scheme (Bearer JWT)
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -83,7 +97,6 @@ builder.Services.AddSwaggerGen(option =>
         Scheme = "Bearer"
     });
 
-    // Yêu cầu bảo mật cho toàn bộ API
     option.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -99,7 +112,6 @@ builder.Services.AddSwaggerGen(option =>
         }
     });
 });
-// -----------------------------------------------
 
 var app = builder.Build();
 
@@ -114,8 +126,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); // 1. Check Token
-app.UseAuthorization();  // 2. Check Quyền
+app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

@@ -9,17 +9,17 @@ namespace DTOs.Entities
         public int Id { get; set; }
 
         public int AssignmentId { get; set; }
-
         [ForeignKey("AssignmentId")]
-        public virtual Assignment Assignment { get; set; } = null!;
+        public Assignment? Assignment { get; set; }
 
         public string ReviewerId { get; set; } = string.Empty;
-
         [ForeignKey("ReviewerId")]
-        public virtual User Reviewer { get; set; } = null!;
+        public User? Reviewer { get; set; }
 
-        public string Decision { get; set; } = "Approve"; // Approve, Reject
+        public string Decision { get; set; } = string.Empty; // Approve / Reject
         public string? Comment { get; set; }
-        public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;
+        public string? ErrorCategory { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

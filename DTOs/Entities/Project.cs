@@ -22,7 +22,6 @@ namespace DTOs.Entities
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalBudget { get; set; }
-
         public DateTime Deadline { get; set; }
 
         // Navigation

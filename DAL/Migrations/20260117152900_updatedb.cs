@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DAL.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class updatedb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -56,8 +56,8 @@ namespace DAL.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ManagerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PricePerLabel = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TotalBudget = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PricePerLabel = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    TotalBudget = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     Deadline = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -186,9 +186,10 @@ namespace DAL.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    ProjectId = table.Column<int>(type: "int", nullable: false),
                     DataItemId = table.Column<int>(type: "int", nullable: false),
                     AnnotatorId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    AssignedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DurationSeconds = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
@@ -202,6 +203,11 @@ namespace DAL.Migrations
                         principalTable: "DataItems",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Assignments_Projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "Projects",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Assignments_Users_AnnotatorId",
                         column: x => x.AnnotatorId,
@@ -217,8 +223,8 @@ namespace DAL.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     AssignmentId = table.Column<int>(type: "int", nullable: false),
-                    LabelClassId = table.Column<int>(type: "int", nullable: false),
-                    DataJson = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    ClassId = table.Column<int>(type: "int", nullable: false),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -230,8 +236,8 @@ namespace DAL.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Annotations_LabelClasses_LabelClassId",
-                        column: x => x.LabelClassId,
+                        name: "FK_Annotations_LabelClasses_ClassId",
+                        column: x => x.ClassId,
                         principalTable: "LabelClasses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -247,7 +253,8 @@ namespace DAL.Migrations
                     ReviewerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Decision = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Comment = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    ErrorCategory = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -272,9 +279,9 @@ namespace DAL.Migrations
                 column: "AssignmentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Annotations_LabelClassId",
+                name: "IX_Annotations_ClassId",
                 table: "Annotations",
-                column: "LabelClassId");
+                column: "ClassId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assignments_AnnotatorId",
@@ -285,6 +292,11 @@ namespace DAL.Migrations
                 name: "IX_Assignments_DataItemId",
                 table: "Assignments",
                 column: "DataItemId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Assignments_ProjectId",
+                table: "Assignments",
+                column: "ProjectId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DataItems_ProjectId",
