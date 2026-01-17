@@ -1,8 +1,7 @@
 ﻿using BLL.Interfaces;
-using DAL;
+using DAL.Interfaces;
 using DTOs.Constants;
 using DTOs.Entities;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,27 +12,22 @@ namespace BLL.Services
 {
     public class UserService : IUserService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
 
-        public UserService(ApplicationDbContext context, IConfiguration configuration)
+        public UserService(IUserRepository userRepository, IConfiguration configuration)
         {
-            _context = context;
+            _userRepository = userRepository;
             _configuration = configuration;
         }
 
         public async Task<User> RegisterAsync(string fullName, string email, string password, string role)
         {
-
             if (!UserRoles.IsValid(role))
-            {
-                throw new Exception($"Invalid role. Allowed roles are: {UserRoles.Annotator}, {UserRoles.Reviewer}, {UserRoles.Manager}, {UserRoles.Admin}");
-            }
+                throw new Exception($"Invalid role.");
 
-            if (await _context.Users.AnyAsync(u => u.Email == email))
-            {
+            if (await _userRepository.IsEmailExistsAsync(email))
                 throw new Exception("Email already exists.");
-            }
 
             var user = new User
             {
@@ -43,18 +37,17 @@ namespace BLL.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 PaymentInfo = new PaymentInfo()
             };
-
             user.PaymentInfo.UserId = user.Id;
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
 
             return user;
         }
 
         public async Task<string?> LoginAsync(string email, string password)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _userRepository.GetUserByEmailAsync(email); 
             if (user == null) return null;
 
             bool isValidPassword = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
@@ -65,41 +58,33 @@ namespace BLL.Services
 
         public async Task<User?> GetUserByIdAsync(string id)
         {
-            return await _context.Users
-                .Include(u => u.PaymentInfo)
-                .FirstOrDefaultAsync(u => u.Id == id);
+            return await _userRepository.GetUserWithPaymentInfoAsync(id);
         }
 
         public async Task<bool> IsEmailExistsAsync(string email)
         {
-            return await _context.Users.AnyAsync(u => u.Email == email);
+            return await _userRepository.IsEmailExistsAsync(email);
         }
 
         public async Task UpdatePaymentInfoAsync(string userId, string bankName, string bankAccount, string taxCode)
         {
-            var user = await _context.Users
-                .Include(u => u.PaymentInfo)
-                .FirstOrDefaultAsync(u => u.Id == userId);
-
+            var user = await _userRepository.GetUserWithPaymentInfoAsync(userId);
             if (user == null) throw new Exception("User not found");
 
-            if (user.PaymentInfo == null)
-            {
-                user.PaymentInfo = new PaymentInfo { UserId = userId };
-            }
+            if (user.PaymentInfo == null) user.PaymentInfo = new PaymentInfo { UserId = userId };
 
             user.PaymentInfo.BankName = bankName;
             user.PaymentInfo.BankAccountNumber = bankAccount;
             user.PaymentInfo.TaxCode = taxCode;
 
-            await _context.SaveChangesAsync();
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
         }
 
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("Jwt");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
-
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
@@ -113,7 +98,6 @@ namespace BLL.Services
                 Issuer = jwtSettings["Issuer"],
                 Audience = jwtSettings["Audience"]
             };
-
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
