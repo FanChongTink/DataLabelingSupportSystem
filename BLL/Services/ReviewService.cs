@@ -12,15 +12,21 @@ namespace BLL.Services
         private readonly IAssignmentRepository _assignmentRepo;
         private readonly IRepository<ReviewLog> _reviewLogRepo;
         private readonly IRepository<DataItem> _dataItemRepo;
+        private readonly IRepository<UserProjectStat> _statsRepo;
+        private readonly IRepository<Project> _projectRepo;
 
         public ReviewService(
             IAssignmentRepository assignmentRepo,
             IRepository<ReviewLog> reviewLogRepo,
-            IRepository<DataItem> dataItemRepo)
+            IRepository<DataItem> dataItemRepo,
+            IRepository<UserProjectStat> statsRepo,
+            IRepository<Project> projectRepo)
         {
             _assignmentRepo = assignmentRepo;
             _reviewLogRepo = reviewLogRepo;
             _dataItemRepo = dataItemRepo;
+            _statsRepo = statsRepo;
+            _projectRepo = projectRepo;
         }
 
         public async Task ReviewAssignmentAsync(string reviewerId, ReviewRequest request)
@@ -30,6 +36,23 @@ namespace BLL.Services
 
             if (assignment.Status != "Submitted")
                 throw new Exception("This task is not ready for review.");
+            var project = await _projectRepo.GetByIdAsync(assignment.ProjectId);
+            if (project == null) throw new Exception("Project info not found");
+
+            var allStats = await _statsRepo.GetAllAsync();
+            var stats = allStats.FirstOrDefault(s => s.UserId == assignment.AnnotatorId && s.ProjectId == assignment.ProjectId);
+
+            if (stats == null)
+            {
+                stats = new UserProjectStat
+                {
+                    UserId = assignment.AnnotatorId,
+                    ProjectId = assignment.ProjectId,
+                    TotalAssigned = 0,
+                    EfficiencyScore = 100
+                };
+                await _statsRepo.AddAsync(stats);
+            }
 
             var log = new ReviewLog
             {
@@ -45,6 +68,9 @@ namespace BLL.Services
             if (request.IsApproved)
             {
                 assignment.Status = "Completed";
+                stats.TotalApproved++;
+                stats.EstimatedEarnings = stats.TotalApproved * project.PricePerLabel;
+
                 if (assignment.DataItemId > 0)
                 {
                     var dataItem = await _dataItemRepo.GetByIdAsync(assignment.DataItemId);
@@ -58,8 +84,13 @@ namespace BLL.Services
             else
             {
                 assignment.Status = "Rejected";
+                stats.TotalRejected++;
             }
-
+            if (stats.TotalAssigned > 0)
+            {
+                stats.EfficiencyScore = ((float)stats.TotalApproved / stats.TotalAssigned) * 100;
+            }
+            _statsRepo.Update(stats);
             _assignmentRepo.Update(assignment);
             await _assignmentRepo.SaveChangesAsync();
         }

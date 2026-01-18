@@ -23,6 +23,9 @@ namespace DTOs.Entities
         public int TotalAssigned { get; set; }
         public int TotalApproved { get; set; }
         public int TotalRejected { get; set; }
+
+        public float EfficiencyScore { get; set; }
+
         public double AvgTimePerLabel { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]

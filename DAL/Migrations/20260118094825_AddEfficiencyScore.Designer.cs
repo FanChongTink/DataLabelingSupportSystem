@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260117152900_updatedb")]
-    partial class updatedb
+    [Migration("20260118094825_AddEfficiencyScore")]
+    partial class AddEfficiencyScore
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -343,6 +343,9 @@ namespace DAL.Migrations
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
+
+                    b.Property<float>("EfficiencyScore")
+                        .HasColumnType("real");
 
                     b.Property<decimal>("EstimatedEarnings")
                         .HasColumnType("decimal(18,2)");
