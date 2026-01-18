@@ -3,6 +3,7 @@ using DAL.Interfaces;
 using DTOs.Entities;
 using DTOs.Requests;
 using DTOs.Responses;
+using System.Text.Json;
 
 namespace BLL.Services
 {
@@ -11,15 +12,18 @@ namespace BLL.Services
         private readonly IAssignmentRepository _assignmentRepo;
         private readonly IRepository<DataItem> _dataItemRepo;
         private readonly IRepository<Annotation> _annotationRepo;
+        private readonly IRepository<UserProjectStat> _statsRepo;
 
         public TaskService(
             IAssignmentRepository assignmentRepo,
             IRepository<DataItem> dataItemRepo,
-            IRepository<Annotation> annotationRepo)
+            IRepository<Annotation> annotationRepo,
+            IRepository<UserProjectStat> statsRepo)
         {
             _assignmentRepo = assignmentRepo;
             _dataItemRepo = dataItemRepo;
             _annotationRepo = annotationRepo;
+            _statsRepo = statsRepo;
         }
 
         public async Task AssignTasksToAnnotatorAsync(AssignTaskRequest request)
@@ -42,6 +46,26 @@ namespace BLL.Services
                 _dataItemRepo.Update(item);
                 await _assignmentRepo.AddAsync(assignment);
             }
+            var allStats = await _statsRepo.GetAllAsync();
+            var stats = allStats.FirstOrDefault(s => s.UserId == request.AnnotatorId && s.ProjectId == request.ProjectId);
+
+            if (stats == null)
+            {
+                stats = new UserProjectStat
+                {
+                    UserId = request.AnnotatorId,
+                    ProjectId = request.ProjectId,
+                    TotalAssigned = 0,
+                    EfficiencyScore = 100,
+                    EstimatedEarnings = 0,
+                    Date = DateTime.UtcNow
+                };
+                await _statsRepo.AddAsync(stats);
+            }
+
+            stats.TotalAssigned += dataItems.Count;
+            stats.Date = DateTime.UtcNow;
+            _statsRepo.Update(stats);
             await _assignmentRepo.SaveChangesAsync();
         }
 
@@ -57,6 +81,7 @@ namespace BLL.Services
                 Status = a.Status
             }).ToList();
         }
+
         public async Task<TaskResponse?> GetTaskDetailAsync(int assignmentId, string annotatorId)
         {
             var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(assignmentId);
@@ -94,11 +119,10 @@ namespace BLL.Services
                     Color = l.Color,
                     GuideLine = l.GuideLine
                 }).ToList() ?? new List<LabelResponse>(),
-
                 ExistingAnnotations = assignment.Annotations.Select(an => new
                 {
                     an.ClassId,
-                    an.Value
+                    Value = JsonDocument.Parse(an.Value).RootElement
                 }).ToList<object>()
             };
         }
