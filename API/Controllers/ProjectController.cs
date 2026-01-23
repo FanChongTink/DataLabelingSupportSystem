@@ -19,6 +19,7 @@ namespace API.Controllers
         }
 
         [HttpPost]
+        [Consumes("application/json")]
         public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
         {
             try
@@ -37,7 +38,7 @@ namespace API.Controllers
 
         [HttpPost("{id}/upload-direct")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadDataDirect(int id, [FromForm] List<IFormFile> files) 
+        public async Task<IActionResult> UploadDataDirect(int id, [FromForm] List<IFormFile> files)
         {
             var urls = new List<string>();
             try
@@ -85,6 +86,7 @@ namespace API.Controllers
         }
 
         [HttpPost("{id}/import-data")]
+        [Consumes("application/json")]
         public async Task<IActionResult> ImportData(int id, [FromBody] ImportDataRequest request)
         {
             try
@@ -119,6 +121,7 @@ namespace API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Consumes("application/json")]
         public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateProjectRequest request)
         {
             try
