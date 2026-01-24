@@ -48,7 +48,7 @@ namespace BLL.Services
 
         public async Task<string?> LoginAsync(string email, string password)
         {
-            var user = await _userRepository.GetUserByEmailAsync(email); 
+            var user = await _userRepository.GetUserByEmailAsync(email);
             if (user == null) return null;
 
             if (string.IsNullOrEmpty(user.PasswordHash)) return null;
