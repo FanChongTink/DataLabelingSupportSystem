@@ -14,34 +14,47 @@ namespace API
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                // 1. Tạo Users (Manager & Staff)
-                var managerEmail = "Manager@gmail.com";
-                var managerUser = await context.Users.FirstOrDefaultAsync(u => u.Email == managerEmail);
+                // --- 1. SEED USERS ---
+
+                var managerId = "11111111-1111-1111-1111-111111111111"; // ID Cố định để FE không bị lỗi
+
+                // Hash mật khẩu 123456
+                var defaultPasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
+
+                var managerUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "Manager@gmail.com");
                 if (managerUser == null)
                 {
                     managerUser = new User
                     {
-                        Email = managerEmail,
+                        Id = managerId,
+                        Email = "Manager@gmail.com",
                         FullName = "Manager Boss",
                         Role = UserRoles.Manager,
-                        PasswordHash = "123456"
+                        PasswordHash = defaultPasswordHash,
+                        IsActive = true
+                        // Đã xóa các trường UserName, NormalizedEmail... gây lỗi
                     };
                     context.Users.Add(managerUser);
                 }
 
+                // Tạo Annotators
                 var annotators = new List<User>();
                 for (int i = 1; i <= 5; i++)
                 {
+                    var staffId = $"22222222-2222-2222-2222-22222222222{i}";
                     var email = $"Staff{i}@gmail.com";
+
                     var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
                     if (user == null)
                     {
                         user = new User
                         {
+                            Id = staffId,
                             Email = email,
                             FullName = $"Staff Annotator {i}",
                             Role = UserRoles.Annotator,
-                            PasswordHash = "123456"
+                            PasswordHash = defaultPasswordHash,
+                            IsActive = true
                         };
                         context.Users.Add(user);
                         annotators.Add(user);
@@ -54,27 +67,27 @@ namespace API
 
                 await context.SaveChangesAsync();
 
-                // 2. Tạo Project & DataItems & Assignments
+                // --- 2. SEED PROJECTS & DATA ---
                 if (!context.Projects.Any())
                 {
                     var projects = new List<Project>();
 
-                    for (int p = 1; p <= 5; p++)
+                    for (int p = 1; p <= 3; p++)
                     {
-                        // A. Tạo Project
                         var project = new Project
                         {
                             Name = $"Dự án Gán Nhãn Xe Hơi {p}",
                             Description = "Dự án test dữ liệu cho FE team.",
                             ManagerId = managerUser.Id,
                             CreatedDate = DateTime.UtcNow,
+                            StartDate = DateTime.UtcNow,
+                            EndDate = DateTime.UtcNow.AddDays(30),
                             PricePerLabel = 1000 + (p * 100),
                             TotalBudget = 1000000,
                             Deadline = DateTime.UtcNow.AddDays(10 + p),
                             AllowGeometryTypes = "Rectangle"
                         };
 
-                        // B. Tạo Label Classes (Nhãn)
                         var labels = new List<LabelClass>
                         {
                             new LabelClass { Name = "Car", Color = "#FF0000", GuideLine = "Vẽ bao quanh xe" },
@@ -83,9 +96,8 @@ namespace API
                         };
                         project.LabelClasses = labels;
 
-                        // C. Tạo DataItems (Ảnh)
                         var dataItems = new List<DataItem>();
-                        for (int d = 1; d <= 20; d++)
+                        for (int d = 1; d <= 10; d++)
                         {
                             dataItems.Add(new DataItem
                             {
@@ -96,9 +108,9 @@ namespace API
                             });
                         }
 
-                        // D. Giả lập giao việc (Assignment)
+                        // Giao việc
                         int staffIndex = 0;
-                        for (int k = 0; k < 15; k++) // Giao 15 ảnh đầu
+                        for (int k = 0; k < 8; k++)
                         {
                             var item = dataItems[k];
                             item.Status = "Assigned";
@@ -106,49 +118,37 @@ namespace API
                             var assignedStaff = annotators[staffIndex % annotators.Count];
 
                             var status = "Assigned";
-                            if (k >= 5 && k < 10) status = "Submitted";
-                            if (k >= 10) status = "Rejected";
+                            if (k == 1) status = "InProgress";
+                            if (k >= 2 && k < 4) status = "Submitted";
+                            if (k >= 4) status = "Rejected";
 
                             var assignment = new Assignment
                             {
-                                // --- FIX LỖI Ở ĐÂY: Gán Project và DataItem tường minh ---
-                                Project = project,   // Quan trọng! Để ProjectId không bị 0
-                                DataItem = item,     // Gán luôn cho chắc
-
+                                Project = project,
+                                DataItem = item,
                                 AnnotatorId = assignedStaff.Id,
                                 Status = status,
                                 AssignedDate = DateTime.UtcNow,
                                 SubmittedAt = (status == "Submitted" || status == "Rejected") ? DateTime.UtcNow : null
                             };
 
-                            // Nếu trạng thái là Submitted hoặc Rejected -> Tạo Annotation Giả
-                            if (status == "Submitted" || status == "Rejected")
-                            {
-                                assignment.Annotations = new List<Annotation>
-                                {
-                                    new Annotation
-                                    {
-                                        LabelClass = labels[0],
-                                        Value = JsonSerializer.Serialize(new { x = 10, y = 10, width = 100, height = 100 })
-                                    }
-                                };
-                            }
-
-                            // Nếu trạng thái là Rejected -> Tạo ReviewLog
+                            // Sửa lỗi WrongLabel -> IncorrectLabel
                             if (status == "Rejected")
                             {
                                 assignment.ReviewLogs = new List<ReviewLog>
                                 {
                                     new ReviewLog
                                     {
-                                        ReviewerId = managerUser.Id,
-                                        Comment = "Vẽ sai rồi, hình bị lệch quá. Vẽ lại đi em!",
+                                        ReviewerId = managerId,
+                                        Verdict = "Rejected",
+                                        // Dùng hằng số có sẵn trong code của bạn
+                                        ErrorCategory = ErrorCategories.IncorrectLabel,
+                                        Comment = "Vẽ sai rồi, đây là xe máy không phải xe đạp!",
                                         CreatedAt = DateTime.UtcNow
                                     }
                                 };
                             }
 
-                            // Add vào list của item
                             if (item.Assignments == null) item.Assignments = new List<Assignment>();
                             item.Assignments.Add(assignment);
 
