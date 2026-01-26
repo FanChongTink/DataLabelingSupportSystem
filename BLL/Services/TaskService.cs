@@ -142,38 +142,46 @@ namespace BLL.Services
                     : null
             }).ToList();
         }
-
         public async Task SaveDraftAsync(string userId, SubmitAnnotationRequest request)
         {
+            if (string.IsNullOrEmpty(request.DataJSON) || request.DataJSON == "[]")
+            {
+                return;
+            }
+
             var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(request.AssignmentId);
             if (assignment == null) throw new KeyNotFoundException("Task not found");
             if (assignment.AnnotatorId != userId) throw new UnauthorizedAccessException("Unauthorized");
             if (assignment.Status == "Approved") throw new InvalidOperationException("Cannot edit approved task");
-            if (assignment.Annotations != null && assignment.Annotations.Any())
+            var existingAnnotation = assignment.Annotations?
+                                     .OrderByDescending(a => a.CreatedAt)
+                                     .FirstOrDefault();
+
+            if (existingAnnotation != null)
             {
-                foreach (var oldAnno in assignment.Annotations)
+                existingAnnotation.DataJSON = request.DataJSON;
+                existingAnnotation.CreatedAt = DateTime.UtcNow;
+                _annotationRepo.Update(existingAnnotation);
+            }
+            else
+            {
+                var annotation = new Annotation
                 {
-                    _annotationRepo.Delete(oldAnno);
-                }
+                    AssignmentId = assignment.Id,
+                    DataJSON = request.DataJSON,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _annotationRepo.AddAsync(annotation);
             }
 
-            var annotation = new Annotation
-            {
-                AssignmentId = assignment.Id,
-                DataJSON = request.DataJSON,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _annotationRepo.AddAsync(annotation);
-
-            if (assignment.Status == "Assigned" || assignment.Status == "Rejected")
+            if (assignment.Status == "New" || assignment.Status == "Assigned" || assignment.Status == "Rejected")
             {
                 assignment.Status = "InProgress";
                 _assignmentRepo.Update(assignment);
             }
-
+            await _annotationRepo.SaveChangesAsync();
             await _assignmentRepo.SaveChangesAsync();
         }
-
         public async Task SubmitTaskAsync(string userId, SubmitAnnotationRequest request)
         {
             var assignment = await _assignmentRepo.GetAssignmentWithDetailsAsync(request.AssignmentId);
