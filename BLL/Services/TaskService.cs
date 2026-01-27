@@ -108,11 +108,11 @@ namespace BLL.Services
                 .Select(g => new AssignedProjectResponse
                 {
                     ProjectId = g.Key,
-                    ProjectName = g.First().Project.Name,
-                    Description = g.First().Project.Description,
-                    ThumbnailUrl = g.First().DataItem.StorageUrl,
+                    ProjectName = g.First().Project?.Name ?? string.Empty,
+                    Description = g.First().Project?.Description ?? string.Empty,
+                    ThumbnailUrl = g.First().DataItem?.StorageUrl ?? string.Empty,
                     AssignedDate = g.Min(a => a.AssignedDate),
-                    Deadline = g.First().Project.Deadline,
+                    Deadline = g.First().Project?.Deadline,
                     TotalImages = g.Count(),
                     CompletedImages = g.Count(a => a.Status == "Submitted" || a.Status == "Approved"),
                     Status = g.All(a => a.Status == "Approved") ? "Completed"
