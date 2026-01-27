@@ -50,7 +50,10 @@ namespace BLL.Services
         {
             var user = await _userRepository.GetUserByEmailAsync(email);
             if (user == null) return null;
-
+            if (!user.IsActive)
+            {
+                throw new ArgumentException("Account is deactivated or banned.");
+            }
             if (string.IsNullOrEmpty(user.PasswordHash)) return null;
 
             bool isValidPassword;
@@ -129,8 +132,18 @@ namespace BLL.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) throw new Exception("User not found");
+            user.IsActive = false;
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+        }
 
-            _userRepository.Delete(user);
+        public async Task ToggleUserStatusAsync(string userId, bool isActive)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) throw new Exception("User not found");
+            user.IsActive = isActive;
+
+            _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();
         }
 

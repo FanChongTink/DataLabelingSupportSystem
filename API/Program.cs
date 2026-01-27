@@ -84,11 +84,12 @@ builder.Services.AddSwaggerGen(c =>
     // Cấu hình nút "Authorize" (Ổ khóa) trên Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Nhập token vào ô bên dưới theo định dạng: Bearer {token}",
+        Description = "Nhập token của bạn vào bên dưới (không cần gõ Bearer)",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http, 
+        Scheme = "Bearer",             
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement

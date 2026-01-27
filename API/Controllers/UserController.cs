@@ -168,7 +168,29 @@ namespace API.Controllers
             try
             {
                 await _userService.DeleteUserAsync(id);
-                return Ok(new { Message = "User deleted successfully" });
+                return Ok(new { Message = "User has been deactivated" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        /// <response code="200">User deleted successfully.</response>
+        /// <response code="400">If deletion fails.</response>
+        /// <response code="401">If user is unauthorized or not an Admin.</response>
+        [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(typeof(object), 400)]
+        [ProducesResponseType(typeof(void), 401)]
+        public async Task<IActionResult> ToggleUserStatus(string id, [FromQuery] bool isActive)
+        {
+            try
+            {
+                await _userService.ToggleUserStatusAsync(id, isActive);
+                var status = isActive ? "Activated" : "Deactivated";
+                return Ok(new { Message = $"User has been {status} successfully" });
             }
             catch (Exception ex)
             {

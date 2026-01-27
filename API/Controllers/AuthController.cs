@@ -49,22 +49,27 @@ namespace API.Controllers
         /// <response code="200">Login successful, returns token.</response>
         /// <response code="401">Invalid email or password.</response>
         [HttpPost("login")]
-        [ProducesResponseType(typeof(object), 200)]
-        [ProducesResponseType(typeof(object), 401)]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var token = await _userService.LoginAsync(request.Email, request.Password);
-            if (token == null)
+            try
             {
-                return Unauthorized(new { Message = "Invalid email or password" });
-            }
+                var token = await _userService.LoginAsync(request.Email, request.Password);
+                if (token == null)
+                {
+                    return Unauthorized(new { Message = "Invalid email or password" });
+                }
 
-            return Ok(new
+                return Ok(new
+                {
+                    Message = "Login successful",
+                    AccessToken = token,
+                    TokenType = "Bearer"
+                });
+            }
+            catch (Exception ex)
             {
-                Message = "Login successful",
-                AccessToken = token,
-                TokenType = "Bearer"
-            });
+                return BadRequest(new { Message = ex.Message });
+            }
         }
     }
 }
