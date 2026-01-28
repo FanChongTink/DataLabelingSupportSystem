@@ -381,7 +381,7 @@ namespace BLL.Services
             var allAnnotations = allAssignments.SelectMany(a => a.Annotations).ToList();
             var labelCounts = allAnnotations
                 .Where(an => an.ClassId.HasValue)
-                .GroupBy(an => an.ClassId)
+                .GroupBy(an => an.ClassId!.Value)
                 .ToDictionary(g => g.Key, g => g.Count());
 
             stats.LabelDistributions = project.LabelClasses.Select(lc => new LabelDistribution

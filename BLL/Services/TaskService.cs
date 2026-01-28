@@ -109,8 +109,8 @@ namespace BLL.Services
                 {
                     ProjectId = g.Key,
                     ProjectName = g.First().Project.Name,
-                    Description = g.First().Project.Description,
-                    ThumbnailUrl = g.First().DataItem.StorageUrl,
+                    Description = g.First().Project.Description ?? "",
+                    ThumbnailUrl = g.First().DataItem?.StorageUrl ?? "",
                     AssignedDate = g.Min(a => a.AssignedDate),
                     Deadline = g.First().Project.Deadline,
                     TotalImages = g.Count(),
