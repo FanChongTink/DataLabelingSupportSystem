@@ -36,6 +36,7 @@ namespace API.Controllers
         public async Task<IActionResult> ReviewTask([FromBody] ReviewRequest request)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             try
             {

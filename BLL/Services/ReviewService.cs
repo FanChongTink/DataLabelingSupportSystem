@@ -123,7 +123,7 @@ namespace BLL.Services
                         return (object)JsonDocument.Parse(an.Value).RootElement;
                     }
                     return null;
-                }).Where(x => x != null).ToList()
+                }).Where(x => x != null).Cast<object>().ToList()
                 // --------------------
             }).ToList();
         }

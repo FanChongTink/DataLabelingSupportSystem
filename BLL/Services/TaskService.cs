@@ -89,7 +89,7 @@ namespace BLL.Services
                 Status = assignment.Status,
                 AnnotationData = assignment.Annotations?.OrderByDescending(an => an.CreatedAt).FirstOrDefault()?.DataJSON,
                 AssignedDate = assignment.AssignedDate,
-                Deadline = assignment.Project.Deadline,
+                Deadline = assignment.Project?.Deadline ?? DateTime.MinValue,
                 RejectionReason = assignment.Status == "Rejected"
                     ? assignment.ReviewLogs?.OrderByDescending(r => r.CreatedAt).FirstOrDefault()?.Comment
                     : null
@@ -108,11 +108,11 @@ namespace BLL.Services
                 .Select(g => new AssignedProjectResponse
                 {
                     ProjectId = g.Key,
-                    ProjectName = g.First().Project.Name,
-                    Description = g.First().Project.Description,
+                    ProjectName = g.First().Project?.Name ?? string.Empty,
+                    Description = g.First().Project?.Description ?? string.Empty,
                     ThumbnailUrl = g.First().DataItem.StorageUrl,
                     AssignedDate = g.Min(a => a.AssignedDate),
-                    Deadline = g.First().Project.Deadline,
+                    Deadline = g.First().Project?.Deadline ?? DateTime.MinValue,
                     TotalImages = g.Count(),
                     CompletedImages = g.Count(a => a.Status == "Submitted" || a.Status == "Approved"),
                     Status = g.All(a => a.Status == "Approved") ? "Completed"
@@ -136,7 +136,7 @@ namespace BLL.Services
                 AnnotationData = a.Annotations?.OrderByDescending(an => an.CreatedAt).FirstOrDefault()?.DataJSON,
 
                 AssignedDate = a.AssignedDate,
-                Deadline = a.Project.Deadline,
+                Deadline = a.Project?.Deadline ?? DateTime.MinValue,
                 RejectionReason = a.Status == "Rejected"
                     ? a.ReviewLogs?.OrderByDescending(r => r.CreatedAt).FirstOrDefault()?.Comment
                     : null
