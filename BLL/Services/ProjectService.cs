@@ -58,7 +58,7 @@ namespace BLL.Services
                 AllowGeometryTypes = request.AllowGeometryTypes ?? "Rectangle",
                 AnnotationGuide = request.AnnotationGuide,
                 MaxTaskDurationHours = request.MaxTaskDurationHours,
-                PenaltyUnit = penaltyUnit 
+                PenaltyUnit = penaltyUnit
             };
 
             if (request.ReviewChecklist != null && request.ReviewChecklist.Any())
@@ -148,9 +148,7 @@ namespace BLL.Services
 
             if (request.ReviewChecklist != null)
             {
-
                 project.ChecklistItems.Clear();
-
                 foreach (var item in request.ReviewChecklist)
                 {
                     project.ChecklistItems.Add(new ReviewChecklistItem

@@ -54,7 +54,6 @@ namespace BLL.Services
             }
 
             stat.Date = DateTime.UtcNow;
-            _statsRepo.Update(stat);
             await _statsRepo.SaveChangesAsync();
         }
 
@@ -94,8 +93,6 @@ namespace BLL.Services
             reviewerStat.TotalReviewsDone++;
             reviewerStat.Date = DateTime.UtcNow;
 
-            _statsRepo.Update(annotatorStat);
-            _statsRepo.Update(reviewerStat);
             await _statsRepo.SaveChangesAsync();
         }
 
@@ -116,7 +113,6 @@ namespace BLL.Services
                 reviewerStat.ReviewerQualityScore = Math.Round(accuracy * 100, 2);
             }
 
-            _statsRepo.Update(reviewerStat);
             await _statsRepo.SaveChangesAsync();
         }
     }
